@@ -1,7 +1,6 @@
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#fbf5f0;--bar:#6e1423;--surface:#fff;--soft:#fbeeea;--text:#2d1f22;--muted:#86686d;--line:#ecd8d4;--accent:#9b1c31;--accent-t:#fff;--gold:#c9a24a;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a0f12;--bar:#2c0b13;--surface:#261519;--soft:#331c21;--text:#f6e9e6;--muted:#bf9fa5;--line:#4a2c32;--accent:#e58a97;--accent-t:#1a0f12;--gold:#dcb85f;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#1a0f12;--bar:#2c0b13;--surface:#261519;--soft:#331c21;--text:#f6e9e6;--muted:#bf9fa5;--line:#4a2c32;--accent:#e58a97;--accent-t:#1a0f12;--gold:#dcb85f;color-scheme:dark}
+--bg:#ffffff;--bar:#6e1423;--surface:#fff;--soft:#fbeeea;--text:#2d1f22;--muted:#86686d;--line:#ecd8d4;--accent:#9b1c31;--accent-t:#fff;--gold:#c9a24a;color-scheme:light}
+:root[data-theme="dark"]{--bg:#000000;--bar:#1a0509;--surface:#141011;--soft:#241519;--text:#f6e9e6;--muted:#bf9fa5;--line:#3a2328;--accent:#e58a97;--accent-t:#000;--gold:#dcb85f;color-scheme:dark}
 *{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--text);font:17px/1.7 Georgia,"Times New Roman",serif;padding-bottom:56px}
 .bar{background:var(--bar);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-family:system-ui,sans-serif;border-bottom:3px solid var(--gold)}
@@ -38,3 +37,6 @@ textarea{width:100%;font:1rem system-ui,sans-serif;border:1px solid var(--line);
 .pix{background:var(--soft);border:1px dashed var(--accent);border-radius:10px;padding:10px;word-break:break-all;margin:8px 0}
 .credit{position:fixed;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));background:var(--bar);color:#f3d9dc;font:600 .75rem system-ui,sans-serif;border:1px solid var(--gold);border-radius:99px;padding:6px 12px;z-index:4}
 .credit b{color:var(--gold)}
+
+.tools{display:flex;gap:8px;align-items:center}
+.tbtn{background:transparent;border:1px solid #c98a94;color:#fff;border-radius:10px;width:40px;height:40px;font-size:1.1rem;cursor:pointer}

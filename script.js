@@ -29,29 +29,48 @@ function render(){
   <p><button class="btn" onclick="generate()" ${busy?"disabled":""}>${busy?"Gerando…":"Gerar devocional de hoje"}</button></p>${err?`<p class="warn">${esc(err)}</p>`:""}`;
  }
  $("app").innerHTML=h+`</div>`}
+function saveDev(r){
+ if(!r||!r.titulo||!Array.isArray(r.reflexao))throw new Error("Resposta incompleta da IA.");
+ S.dev[today]={titulo:r.titulo,versiculo:r.versiculo||"",referencia:r.referencia||"",reflexao:r.reflexao,oracao:r.oracao||"",tema:r.tema||theme};save();
+}
+function parseDev(t){
+ const a=t.indexOf("{"),b=t.lastIndexOf("}");
+ if(a<0||b<a)throw new Error("A IA não devolveu o formato esperado.");
+ return JSON.parse(t.slice(a,b+1));
+}
+async function loadFromFile(){
+ // Fora do Claude: lê o devocional do dia gerado pelo seu servidor (devocional-hoje.json)
+ if(location.protocol==="file:")throw new Error("Abra o site por um servidor local (rode: python -m http.server) para ler o devocional-hoje.json.");
+ const res=await fetch("devocional-hoje.json",{cache:"no-store"});
+ if(!res.ok)throw new Error("O devocional de hoje ainda não foi publicado.");
+ saveDev(await res.json());
+}
 async function generate(){
  busy=true;err="";render();
  try{
   let sample=null;
   try{sample=(typeof claude!=="undefined")?await claude.use("sample"):null}catch(e){}
-  if(!sample){
-   // Fora do Claude: lê o devocional do dia gerado pelo seu servidor (arquivo JSON)
-   const res=await fetch("devocional-hoje.json",{cache:"no-store"});
-   if(!res.ok)throw new Error("O devocional de hoje ainda não foi publicado.");
-   const j=await res.json();
-   S.dev[today]={titulo:j.titulo,versiculo:j.versiculo,referencia:j.referencia,reflexao:j.reflexao,oracao:j.oracao,tema:j.tema||theme};save();
-   busy=false;render();return;
-  }
+  if(!sample){await loadFromFile();busy=false;render();return}
   const d=now.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const recent=Object.keys(S.dev).sort().slice(-15).map(k=>S.dev[k].titulo);
   const prompt=`Você escreve devocionais cristãos em português do Brasil, com linguagem acolhedora e simples, para o dia ${d}. Tema do dia: ${theme}. O fio condutor é o amor de Cristo.
 Regras: título criativo e curto, diferente destes já usados: ${recent.length?recent.join("; "):"(nenhum ainda)"}. Use um versículo curto da Bíblia (Almeida) que você tenha certeza de que está correto. Reflexão de 3 parágrafos curtos e práticos, sem tom de julgamento e sem afirmar doutrinas de uma denominação específica. Termine com uma oração curta em primeira pessoa.
-Responda SOMENTE com JSON: {"titulo":"...","versiculo":"texto do versículo","referencia":"Livro cap:vers","reflexao":["p1","p2","p3"],"oracao":"..."}`;
-  const r=await sample.json(prompt,{cache:false});
-  if(!r||!r.titulo||!Array.isArray(r.reflexao))throw new Error("Resposta inesperada. Tente de novo.");
-  S.dev[today]={titulo:r.titulo,versiculo:r.versiculo,referencia:r.referencia,reflexao:r.reflexao,oracao:r.oracao,tema:theme};save();
- }catch(e){err=(e&&e.code==="not_granted")?"É preciso permitir a geração por IA para continuar.":(e&&e.message)||"Não foi possível gerar agora."}
+Responda SOMENTE com um objeto JSON, sem texto antes ou depois e sem markdown: {"titulo":"...","versiculo":"texto do versículo","referencia":"Livro cap:vers","reflexao":["p1","p2","p3"],"oracao":"..."}`;
+  let lastErr;
+  for(let i=0;i<2;i++){
+   try{const out=await sample(prompt,{cache:false});saveDev(parseDev(out.text));lastErr=null;break}
+   catch(e){lastErr=e;if(e&&e.code)break}
+  }
+  if(lastErr)throw lastErr;
+ }catch(e){
+  err=(e&&e.code==="not_granted")?"É preciso permitir a geração por IA para continuar.":"Não foi possível gerar agora"+(e&&e.code?" ("+e.code+")":"")+": "+((e&&e.message)||"tente novamente")+"";
+ }
  busy=false;render()}
+function setTheme(t){
+ if(t==="dark")document.documentElement.setAttribute("data-theme","dark");else document.documentElement.removeAttribute("data-theme");
+ S.theme=t;save();const b=$("tbtn");if(b)b.textContent=t==="dark"?"☀️":"🌙";
+}
+function toggleTheme(){setTheme(S.theme==="dark"?"light":"dark")}
 function toggleMenu(){const m=$("menu");if(!m.hidden){m.hidden=true;return}
  m.innerHTML=`<button onclick="openNotes()">📝 Notas deste devocional</button><button onclick="openArchive()">📚 Devocionais anteriores</button><button onclick="openDonate()">❤️ Apoiar o projeto</button>`;m.hidden=false}
 document.addEventListener("click",e=>{if(!e.target.closest(".menuwrap"))$("menu").hidden=true});
@@ -74,8 +93,10 @@ function openDonate(){
  if(c.whatsapp)links.push(`<a class="btn" target="_blank" rel="noopener" href="https://wa.me/${c.whatsapp.replace(/\D/g,"")}">WhatsApp</a>`);
  if(c.email)links.push(`<a class="btn ghost" href="mailto:${esc(c.email)}">E-mail</a>`);
  if(c.instagram)links.push(`<a class="btn ghost" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.instagram.replace("@",""))}">Instagram</a>`);
- modal(`<h3>❤️ Apoie o projeto</h3><p>A Caminhada é gratuita. Se este devocional abençoou a sua vida, você pode contribuir da forma que preferir, no valor que o seu coração indicar. Entre em contato e combinamos a melhor maneira.</p>
+ modal(`<h3>❤️ Apoie o projeto</h3><p>O Caminhada é gratuito. Se este devocional abençoou a sua vida, você pode contribuir da forma que preferir, no valor que o seu coração indicar. Entre em contato e combinamos a melhor maneira.</p>
  ${c.pix?`<div class="muted">Chave Pix</div><div class="pix">${esc(c.pix)}</div><button class="btn ghost" id="cp" onclick="copyPix()">Copiar chave Pix</button>`:""}
  ${links.length?`<div class="contact">${links.join("")}</div>`:`<p class="muted">Os canais de contato serão divulgados em breve.</p>`}
  <p class="muted">Toda contribuição ajuda a manter o devocional diário no ar. Obrigado!</p>`)}
+setTheme(S.theme==="dark"?"dark":"light");
 render();
+if(!S.dev[today]&&typeof claude==="undefined"){loadFromFile().then(render).catch(()=>{})}
