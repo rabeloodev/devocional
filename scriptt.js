@@ -74,6 +74,7 @@ function renderDailyVerses(dev) {
       <p class="daily-verse-text">“${esc(verse.texto)}”</p>
       <div class="daily-verse-footer"><cite>${esc(verse.referencia)}</cite><button class="share-btn" id="share-verse-${index}" onclick="shareDailyVerse(${index})"><span aria-hidden="true">↗</span> Compartilhar</button></div>
     </article>`).join("")}</div>
+    ${dev.frase_autoral ? `<blockquote class="daily-author-quote"><p>“${esc(dev.frase_autoral.texto)}”</p><cite>${esc(dev.frase_autoral.autor)}</cite></blockquote>` : ""}
   </section>`
 }
 function render() {
@@ -128,7 +129,13 @@ async function loadLibrary() {
               verse.texto.trim() &&
               typeof verse.referencia === "string" &&
               verse.referencia.trim(),
-          ))),
+              ))) &&
+      (dev.frase_autoral === undefined ||
+        (dev.frase_autoral &&
+          typeof dev.frase_autoral.texto === "string" &&
+          dev.frase_autoral.texto.trim() &&
+          typeof dev.frase_autoral.autor === "string" &&
+          dev.frase_autoral.autor.trim())),
   )
   if (!valid) throw new Error("Revise os campos dos devocionais em devocionais.json.")
   biblioteca = data
