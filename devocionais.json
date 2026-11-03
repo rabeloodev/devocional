@@ -29,8 +29,20 @@
     {
       "titulo": "Devocional Diário",
       "tema": "A Alegria da Salvação",
-      "versiculo": "Alegrem-se sempre no Senhor. Novamente direi: alegrem-se!",
-      "referencia": "Filipenses 4:4",
+      "versiculos_do_dia": [
+        {
+          "texto": "Regozijai-vos sempre no Senhor; outra vez digo, regozijai-vos.",
+          "referencia": "Filipenses 4:4"
+        },
+        {
+          "texto": "Alegrai-vos na esperança, sede pacientes na tribulação, perseverai na oração.",
+          "referencia": "Romanos 12:12"
+        }
+      ],
+      "frase_autoral": {
+        "texto": "Pedro afundou quando tirou os olhos de Jesus.",
+        "autor": "Kauã Rabelo"
+      },
       "reflexao": [
         "A alegria que Paulo nos exorta a ter não é uma alegria superficial ou circunstancial, mas uma alegria profunda e constante que nasce do relacionamento com Cristo. Mesmo em meio às dificuldades, perseguições e desafios da vida, a presença de Deus em nossas vidas nos proporciona uma paz e uma alegria que o mundo não pode oferecer.",
         "Quando nos concentramos nas promessas de Deus e na obra redentora de Cristo, encontramos motivos para nos alegrar independentemente das circunstâncias externas. A verdadeira alegria é fruto da fé e da confiança no Senhor, que nos sustenta e nos guia em todos os momentos."
