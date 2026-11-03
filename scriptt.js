@@ -62,30 +62,45 @@ function devotionalFor(dateKey) {
     biblioteca.devocionais.length
   return biblioteca.devocionais[index]
 }
+function versesFor(dev) {
+  return dev.versiculos_do_dia?.length
+    ? dev.versiculos_do_dia
+    : [{ texto: dev.versiculo, referencia: dev.referencia }]
+}
+function renderDailyVerses(dev) {
+  return `<section class="daily-verses" aria-labelledby="daily-verses-title">
+    <div class="daily-verses-heading"><h2 id="daily-verses-title">Versículos do dia</h2><span></span></div>
+    <div class="daily-verses-grid">${versesFor(dev).map((verse, index) => `<article class="daily-verse">
+      <p class="daily-verse-text">“${esc(verse.texto)}”</p>
+      <div class="daily-verse-footer"><cite>${esc(verse.referencia)}</cite><button class="share-btn" id="share-verse-${index}" onclick="shareDailyVerse(${index})"><span aria-hidden="true">↗</span> Compartilhar</button></div>
+    </article>`).join("")}</div>
+  </section>`
+}
 function render() {
   const d = new Date(viewKey + "T12:00:00"),
     dev = devotionalFor(viewKey)
-  let h = `<h1>Devocional diário</h1><p class="lead">Uma mensagem de fé para acompanhar sua caminhada, todos os dias.</p><div class="card">`
+  let h = `<h1>Devocional diário</h1><p class="lead">Uma mensagem de fé para acompanhar sua caminhada, todos os dias.</p>`
   if (loading) {
-    h += `<p class="muted">Carregando os devocionais…</p>`
+    h += `<div class="card"><p class="muted">Carregando os devocionais…</p></div>`
   } else if (loadError) {
-    h += `<p class="warn">${esc(loadError)}</p>`
+    h += `<div class="card"><p class="warn">${esc(loadError)}</p></div>`
   } else if (!biblioteca.devocionais.length) {
-    h += `<div class="head">${dateBox(d)}<div><div class="kick">Sua biblioteca</div><h2>Pronta para receber seu primeiro texto</h2></div></div>
+    h += `<div class="card"><div class="head">${dateBox(d)}<div><div class="kick">Sua biblioteca</div><h2>Pronta para receber seu primeiro texto</h2></div></div>
   <p class="muted">Adicione seus devocionais no arquivo <strong>devocionais.json</strong>. A publicação começa na data definida em <strong>data_inicio</strong>.</p>`
+    h += `</div>`
   } else if (dev) {
     const dayIndex =
       ((Math.floor(utcDay(viewKey) - utcDay(biblioteca.data_inicio)) %
         biblioteca.devocionais.length) +
         biblioteca.devocionais.length) %
       biblioteca.devocionais.length
-    h += `<div class="head">${dateBox(d)}<div><div class="kick">${viewKey === today ? "Devocional de hoje" : "Devocional de " + d.toLocaleDateString("pt-BR")}</div><h2>${esc(dev.titulo)}</h2><span class="tag">Tema: ${esc(dev.tema)}</span></div></div>
+    h += `${renderDailyVerses(dev)}<div class="card"><div class="head">${dateBox(d)}<div><div class="kick">${viewKey === today ? "Devocional de hoje" : "Devocional de " + d.toLocaleDateString("pt-BR")}</div><h2>${esc(dev.titulo)}</h2><span class="tag">Tema: ${esc(dev.tema)}</span></div></div>
   <div class="verse">“${esc(dev.versiculo)}”<cite>${esc(dev.referencia)}</cite></div>
   <div class="body">${dev.reflexao.map((p) => `<p>${esc(p)}</p>`).join("")}<p class="prayer">${esc(dev.oracao)}</p></div>
   <p class="muted">Devocional ${dayIndex + 1} de ${biblioteca.devocionais.length} nesta sequência.</p>
-  <button class="btn" onclick="openNotes()">📝 Escrever nota sobre este devocional</button>`
+  <button class="btn" onclick="openNotes()">📝 Escrever nota sobre este devocional</button></div>`
   }
-  $("app").innerHTML = h + `</div>`
+  $("app").innerHTML = h
 }
 async function loadLibrary() {
   if (location.protocol === "file:")
@@ -103,10 +118,34 @@ async function loadLibrary() {
       ) &&
       Array.isArray(dev.reflexao) &&
       dev.reflexao.length > 0 &&
-      dev.reflexao.every((paragraph) => typeof paragraph === "string" && paragraph.trim()),
+      dev.reflexao.every((paragraph) => typeof paragraph === "string" && paragraph.trim()) &&
+      (dev.versiculos_do_dia === undefined ||
+        (Array.isArray(dev.versiculos_do_dia) &&
+          dev.versiculos_do_dia.every(
+            (verse) =>
+              verse &&
+              typeof verse.texto === "string" &&
+              verse.texto.trim() &&
+              typeof verse.referencia === "string" &&
+              verse.referencia.trim(),
+          ))),
   )
   if (!valid) throw new Error("Revise os campos dos devocionais em devocionais.json.")
   biblioteca = data
+}
+async function shareDailyVerse(index) {
+  const verse = versesFor(devotionalFor(viewKey))[index]
+  const text = `“${verse.texto}”\n${verse.referencia}`
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "Versículo do dia", text })
+    } else {
+      await navigator.clipboard.writeText(text)
+      $("share-verse-" + index).textContent = "Copiado"
+    }
+  } catch (error) {
+    if (error.name !== "AbortError") alert("Não foi possível compartilhar este versículo.")
+  }
 }
 function setTheme(t) {
   if (t === "dark") document.documentElement.setAttribute("data-theme", "dark")
