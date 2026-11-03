@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: devocional-diario
+  cancel-in-progress: false
+
 jobs:
   gerar:
     runs-on: ubuntu-latest
@@ -26,6 +30,7 @@ jobs:
       - name: Gerar devocional
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TZ: America/Sao_Paulo
         run: python "gerar devocional.py"
 
       - name: Publicar arquivos gerados

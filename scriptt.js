@@ -25,7 +25,7 @@ function render(){
   <p class="warn">Conteúdo gerado por IA. Confira os versículos na sua Bíblia e converse com a sua liderança sobre dúvidas de doutrina.</p>`;
  } else {
   h+=`<div class="head">${dateBox(d)}<div><div class="kick">Devocional de hoje</div><h2>Tema de hoje: ${esc(theme)}</h2></div></div>
-  <p class="muted">O devocional é publicado automaticamente todos os dias. Verifique novamente em instantes.</p>
+  <p class="muted">A geração automática publica aqui o devocional do dia. Se a publicação estiver em andamento, tente novamente em alguns minutos.</p>
   <p><button class="btn" onclick="generate()" ${busy?"disabled":""}>${busy?"Verificando…":"Verificar publicação"}</button></p>${err?`<p class="warn">${esc(err)}</p>`:""}`;
  }
  $("app").innerHTML=h+`</div>`}
@@ -42,17 +42,30 @@ async function loadFromFile(){
  // Fora do Claude: lê o devocional do dia gerado pelo seu servidor (devocional-hoje.json)
  if(location.protocol==="file:")throw new Error("Abra o site por um servidor local (rode: python -m http.server) para ler o devocional-hoje.json.");
  const res=await fetch("devocional-hoje.json",{cache:"no-store"});
- if(!res.ok)throw new Error(res.status===404?"A publicação automática de hoje ainda não chegou. Tente novamente em instantes.":"Não foi possível consultar a publicação diária.");
+ if(!res.ok)throw new Error(res.status===404?"A geração automática de hoje ainda não foi publicada. Tente novamente em alguns minutos.":"Não foi possível consultar a publicação diária.");
  const dev=await res.json();
- if(dev.data&&dev.data!==today)throw new Error("O devocional de hoje ainda não foi publicado.");
+ if(dev.data&&dev.data!==today)throw new Error("A publicação disponível é de "+dev.data+"; a geração de hoje pode estar em andamento.");
  saveDev(dev);
 }
 async function generate(){
  busy=true;err="";render();
  try{
-  await loadFromFile();
+  let sample=null;
+  try{sample=(typeof claude!=="undefined")?await claude.use("sample"):null}catch(e){}
+  if(!sample){await loadFromFile();busy=false;render();return}
+  const d=now.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const recent=Object.keys(S.dev).sort().slice(-15).map(k=>S.dev[k].titulo);
+  const prompt=`Você escreve devocionais cristãos em português do Brasil, com linguagem acolhedora e simples, para o dia ${d}. Tema do dia: ${theme}. O fio condutor é o amor de Cristo.
+Regras: título criativo e curto, diferente destes já usados: ${recent.length?recent.join("; "):"(nenhum ainda)"}. Use um versículo curto da Bíblia (Almeida) que você tenha certeza de que está correto. Reflexão de 3 parágrafos curtos e práticos, sem tom de julgamento e sem afirmar doutrinas de uma denominação específica. Termine com uma oração curta em primeira pessoa.
+Responda SOMENTE com um objeto JSON, sem texto antes ou depois e sem markdown: {"titulo":"...","versiculo":"texto do versículo","referencia":"Livro cap:vers","reflexao":["p1","p2","p3"],"oracao":"..."}`;
+  let lastErr;
+  for(let i=0;i<2;i++){
+   try{const out=await sample(prompt,{cache:false});saveDev(parseDev(out.text));lastErr=null;break}
+   catch(e){lastErr=e;if(e&&e.code)break}
+  }
+  if(lastErr)throw lastErr;
  }catch(e){
-  err=(e&&e.message)||"Não foi possível consultar a publicação diária. Tente novamente.";
+  err=(e&&e.code==="not_granted")?"É preciso permitir a geração por IA para continuar.":"Não foi possível gerar agora"+(e&&e.code?" ("+e.code+")":"")+": "+((e&&e.message)||"tente novamente")+"";
  }
  busy=false;render()}
 function setTheme(t){
@@ -88,4 +101,4 @@ function openDonate(){
  <p class="muted">Toda contribuição ajuda a manter o devocional diário no ar. Obrigado!</p>`)}
 setTheme(S.theme==="dark"?"dark":"light");
 render();
-if(!S.dev[today]){loadFromFile().then(()=>{err="";render()}).catch(e=>{err=e.message;render()})}
+if(!S.dev[today]&&typeof claude==="undefined"){loadFromFile().then(()=>{err="";render()}).catch(e=>{err=e.message;render()})}
