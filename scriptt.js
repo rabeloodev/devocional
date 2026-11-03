@@ -1,73 +1,53 @@
 // ===== PREENCHA SEUS CANAIS DE CONTATO PARA DOAÇÕES =====
 const CONTATO={whatsapp:"",email:"",pix:"",instagram:""};
 // ========================================================
-const THEMES=["O amor de Cristo na cruz","Amar o próximo","Perdão que liberta","A graça que nos sustenta","Esperança que não se apaga","A paz que excede o entendimento","Gratidão em todas as coisas","Fé como confiança","Oração simples e sincera","Humildade de coração","Perseverar no caminho","A alegria do Senhor","Misericórdia que se renova","Sabedoria para o dia a dia","Descansar em Deus","Propósito e chamado","Família e lar","Cura das feridas interiores","Confiar quando não entendemos","Uma vida santa","Servir como Jesus serviu","Comunhão com os irmãos","Entregar a ansiedade","Coragem para seguir","Bondade que transforma","Reconciliação","Adoração de todo o coração","Recomeçar com Deus","Paciência e espera","Jesus, o Bom Pastor","Ser luz no mundo"];
 const DOW=["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
 const MON=["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 const S=(()=>{try{return JSON.parse(localStorage.getItem("cdia")||"{}")}catch(e){return{}}})();
-S.dev=S.dev||{};S.notes=S.notes||[];
+S.notes=S.notes||[];
 const save=()=>{try{localStorage.setItem("cdia",JSON.stringify(S))}catch(e){}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const now=new Date();
 const key=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-const doy=Math.floor((now-new Date(now.getFullYear(),0,0))/864e5);
-let today=key(now),viewKey=today,theme=THEMES[doy%THEMES.length],busy=false,err="";
+const utcDay=value=>{const [year,month,day]=value.split("-").map(Number);return Date.UTC(year,month-1,day)/864e5};
+let today=key(now),viewKey=today,biblioteca={data_inicio:"2026-11-02",devocionais:[]},loading=true,loadError="";
 function dateBox(d){return `<div class="date"><b>${MON[d.getMonth()]}</b><span>${d.getDate()}</span><i>${DOW[d.getDay()]}</i></div>`}
+function devotionalFor(dateKey){
+ if(!biblioteca.devocionais.length)return null;
+ const offset=Math.floor(utcDay(dateKey)-utcDay(biblioteca.data_inicio));
+ const index=((offset%biblioteca.devocionais.length)+biblioteca.devocionais.length)%biblioteca.devocionais.length;
+ return biblioteca.devocionais[index];
+}
 function render(){
- const d=new Date(viewKey+"T12:00:00"),dev=S.dev[viewKey];
- let h=`<h1>Devocional diário</h1><p class="lead">A cada dia um devocional novo, gerado com IA, para você conhecer mais o amor de Cristo.</p><div class="card">`;
- if(dev){
+ const d=new Date(viewKey+"T12:00:00"),dev=devotionalFor(viewKey);
+ let h=`<h1>Devocional diário</h1><p class="lead">Uma mensagem de fé para acompanhar sua caminhada, todos os dias.</p><div class="card">`;
+ if(loading){
+  h+=`<p class="muted">Carregando os devocionais…</p>`;
+ }else if(loadError){
+  h+=`<p class="warn">${esc(loadError)}</p>`;
+ }else if(!biblioteca.devocionais.length){
+  h+=`<div class="head">${dateBox(d)}<div><div class="kick">Sua biblioteca</div><h2>Pronta para receber seu primeiro texto</h2></div></div>
+  <p class="muted">Adicione seus devocionais no arquivo <strong>devocionais.json</strong>. A publicação começa na data definida em <strong>data_inicio</strong>.</p>`;
+ }else if(dev){
+  const dayIndex=((Math.floor(utcDay(viewKey)-utcDay(biblioteca.data_inicio))%biblioteca.devocionais.length)+biblioteca.devocionais.length)%biblioteca.devocionais.length;
   h+=`<div class="head">${dateBox(d)}<div><div class="kick">${viewKey===today?"Devocional de hoje":"Devocional de "+d.toLocaleDateString("pt-BR")}</div><h2>${esc(dev.titulo)}</h2><span class="tag">Tema: ${esc(dev.tema)}</span></div></div>
   <div class="verse">“${esc(dev.versiculo)}”<cite>${esc(dev.referencia)}</cite></div>
   <div class="body">${dev.reflexao.map(p=>`<p>${esc(p)}</p>`).join("")}<p class="prayer">${esc(dev.oracao)}</p></div>
-  <button class="btn" onclick="openNotes()">📝 Escrever nota sobre este devocional</button>
-  <p class="warn">Conteúdo gerado por IA. Confira os versículos na sua Bíblia e converse com a sua liderança sobre dúvidas de doutrina.</p>`;
- } else {
-  h+=`<div class="head">${dateBox(d)}<div><div class="kick">Devocional de hoje</div><h2>Tema de hoje: ${esc(theme)}</h2></div></div>
-  <p class="muted">A geração automática publica aqui o devocional do dia. Se a publicação estiver em andamento, tente novamente em alguns minutos.</p>
-  <p><button class="btn" onclick="generate()" ${busy?"disabled":""}>${busy?"Verificando…":"Verificar publicação"}</button></p>${err?`<p class="warn">${esc(err)}</p>`:""}`;
+  <p class="muted">Devocional ${dayIndex+1} de ${biblioteca.devocionais.length} nesta sequência.</p>
+  <button class="btn" onclick="openNotes()">📝 Escrever nota sobre este devocional</button>`;
  }
  $("app").innerHTML=h+`</div>`}
-function saveDev(r){
- if(!r||!r.titulo||!Array.isArray(r.reflexao))throw new Error("Resposta incompleta da IA.");
- S.dev[today]={titulo:r.titulo,versiculo:r.versiculo||"",referencia:r.referencia||"",reflexao:r.reflexao,oracao:r.oracao||"",tema:r.tema||theme};save();
+async function loadLibrary(){
+ if(location.protocol==="file:")throw new Error("Abra o site por um servidor local para carregar devocionais.json.");
+ const response=await fetch("devocionais.json",{cache:"no-store"});
+ if(!response.ok)throw new Error("Não foi possível abrir devocionais.json.");
+ const data=await response.json();
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(data.data_inicio)||!Array.isArray(data.devocionais))throw new Error("Confira data_inicio e devocionais no arquivo devocionais.json.");
+ const valid=data.devocionais.every(dev=>dev&&[dev.titulo,dev.tema,dev.versiculo,dev.referencia,dev.oracao].every(value=>typeof value==="string"&&value.trim())&&Array.isArray(dev.reflexao)&&dev.reflexao.length>0&&dev.reflexao.every(paragraph=>typeof paragraph==="string"&&paragraph.trim()));
+ if(!valid)throw new Error("Revise os campos dos devocionais em devocionais.json.");
+ biblioteca=data;
 }
-function parseDev(t){
- const a=t.indexOf("{"),b=t.lastIndexOf("}");
- if(a<0||b<a)throw new Error("A IA não devolveu o formato esperado.");
- return JSON.parse(t.slice(a,b+1));
-}
-async function loadFromFile(){
- // Fora do Claude: lê o devocional do dia gerado pelo seu servidor (devocional-hoje.json)
- if(location.protocol==="file:")throw new Error("Abra o site por um servidor local (rode: python -m http.server) para ler o devocional-hoje.json.");
- const res=await fetch("devocional-hoje.json",{cache:"no-store"});
- if(!res.ok)throw new Error(res.status===404?"A geração automática de hoje ainda não foi publicada. Tente novamente em alguns minutos.":"Não foi possível consultar a publicação diária.");
- const dev=await res.json();
- if(dev.data&&dev.data!==today)throw new Error("A publicação disponível é de "+dev.data+"; a geração de hoje pode estar em andamento.");
- saveDev(dev);
-}
-async function generate(){
- busy=true;err="";render();
- try{
-  let sample=null;
-  try{sample=(typeof claude!=="undefined")?await claude.use("sample"):null}catch(e){}
-  if(!sample){await loadFromFile();busy=false;render();return}
-  const d=now.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-  const recent=Object.keys(S.dev).sort().slice(-15).map(k=>S.dev[k].titulo);
-  const prompt=`Você escreve devocionais cristãos em português do Brasil, com linguagem acolhedora e simples, para o dia ${d}. Tema do dia: ${theme}. O fio condutor é o amor de Cristo.
-Regras: título criativo e curto, diferente destes já usados: ${recent.length?recent.join("; "):"(nenhum ainda)"}. Use um versículo curto da Bíblia (Almeida) que você tenha certeza de que está correto. Reflexão de 3 parágrafos curtos e práticos, sem tom de julgamento e sem afirmar doutrinas de uma denominação específica. Termine com uma oração curta em primeira pessoa.
-Responda SOMENTE com um objeto JSON, sem texto antes ou depois e sem markdown: {"titulo":"...","versiculo":"texto do versículo","referencia":"Livro cap:vers","reflexao":["p1","p2","p3"],"oracao":"..."}`;
-  let lastErr;
-  for(let i=0;i<2;i++){
-   try{const out=await sample(prompt,{cache:false});saveDev(parseDev(out.text));lastErr=null;break}
-   catch(e){lastErr=e;if(e&&e.code)break}
-  }
-  if(lastErr)throw lastErr;
- }catch(e){
-  err=(e&&e.code==="not_granted")?"É preciso permitir a geração por IA para continuar.":"Não foi possível gerar agora"+(e&&e.code?" ("+e.code+")":"")+": "+((e&&e.message)||"tente novamente")+"";
- }
- busy=false;render()}
 function setTheme(t){
  if(t==="dark")document.documentElement.setAttribute("data-theme","dark");else document.documentElement.removeAttribute("data-theme");
  S.theme=t;save();const b=$("tbtn");if(b){b.textContent=t==="dark"?"☀️":"🌙";b.setAttribute("aria-label",t==="dark"?"Ativar tema claro":"Ativar tema escuro");b.title=t==="dark"?"Ativar tema claro":"Ativar tema escuro";}
@@ -79,7 +59,7 @@ document.addEventListener("click",e=>{if(!e.target.closest(".menuwrap"))$("menu"
 function modal(html){$("menu").hidden=true;$("modal").innerHTML=`<div class="over" onclick="if(event.target===this)closeM()"><div class="sheet"><button class="x" onclick="closeM()" aria-label="Fechar">×</button>${html}</div></div>`}
 function closeM(){$("modal").innerHTML=""}
 function openNotes(){
- const mine=S.notes.filter(n=>n.k===viewKey),dev=S.dev[viewKey];
+ const mine=S.notes.filter(n=>n.k===viewKey),dev=devotionalFor(viewKey);
  modal(`<h3>Bloco de notas</h3><p class="muted">${dev?esc(dev.titulo)+" · "+esc(dev.referencia):"Devocional de "+viewKey}</p>
  <textarea id="nt" rows="4" placeholder="O que Deus falou ao seu coração com este devocional?"></textarea>
  <p><button class="btn" onclick="addNote()">Salvar nota</button></p>
@@ -87,8 +67,8 @@ function openNotes(){
 function addNote(){const t=$("nt").value.trim();if(!t)return;S.notes.unshift({id:Date.now(),k:viewKey,t});save();openNotes()}
 function delNote(id){S.notes=S.notes.filter(n=>n.id!==id);save();openNotes()}
 function openArchive(){
- const ks=Object.keys(S.dev).sort().reverse();
- modal(`<h3>Devocionais anteriores</h3>`+(ks.map(k=>`<div class="note"><a style="font-size:1rem" onclick="viewKey='${k}';closeM();render()">${k.split("-").reverse().join("/")} · ${esc(S.dev[k].titulo)}</a></div>`).join("")||`<p class="muted">Os devocionais gerados aparecerão aqui.</p>`))}
+ const items=biblioteca.devocionais.map((dev,index)=>{const d=new Date(biblioteca.data_inicio+"T12:00:00");d.setDate(d.getDate()+index);const dateKey=key(d);return `<div class="note"><a style="font-size:1rem" onclick="viewKey='${dateKey}';closeM();render()">${dateKey.split("-").reverse().join("/")} · ${esc(dev.titulo)}</a></div>`}).join("");
+ modal(`<h3>Devocionais da sequência</h3>${items||`<p class="muted">Seus textos aparecerão aqui depois que você preencher devocionais.json.</p>`}`)}
 function copyPix(){try{navigator.clipboard.writeText(CONTATO.pix);$("cp").textContent="Copiado!"}catch(e){$("cp").textContent="Copie manualmente"}}
 function openDonate(){
  const c=CONTATO,links=[];
@@ -101,4 +81,4 @@ function openDonate(){
  <p class="muted">Toda contribuição ajuda a manter o devocional diário no ar. Obrigado!</p>`)}
 setTheme(S.theme==="dark"?"dark":"light");
 render();
-if(!S.dev[today]&&typeof claude==="undefined"){loadFromFile().then(()=>{err="";render()}).catch(e=>{err=e.message;render()})}
+loadLibrary().then(()=>{loading=false;render()}).catch(error=>{loading=false;loadError=error.message;render()});
