@@ -25,8 +25,8 @@ function render(){
   <p class="warn">Conteúdo gerado por IA. Confira os versículos na sua Bíblia e converse com a sua liderança sobre dúvidas de doutrina.</p>`;
  } else {
   h+=`<div class="head">${dateBox(d)}<div><div class="kick">Devocional de hoje</div><h2>Tema de hoje: ${esc(theme)}</h2></div></div>
-  <p class="muted">Ainda não há devocional para hoje neste navegador. Gere o de hoje com IA.</p>
-  <p><button class="btn" onclick="generate()" ${busy?"disabled":""}>${busy?"Gerando…":"Gerar devocional de hoje"}</button></p>${err?`<p class="warn">${esc(err)}</p>`:""}`;
+  <p class="muted">O devocional é publicado automaticamente todos os dias. Verifique novamente em instantes.</p>
+  <p><button class="btn" onclick="generate()" ${busy?"disabled":""}>${busy?"Verificando…":"Verificar publicação"}</button></p>${err?`<p class="warn">${esc(err)}</p>`:""}`;
  }
  $("app").innerHTML=h+`</div>`}
 function saveDev(r){
@@ -42,33 +42,22 @@ async function loadFromFile(){
  // Fora do Claude: lê o devocional do dia gerado pelo seu servidor (devocional-hoje.json)
  if(location.protocol==="file:")throw new Error("Abra o site por um servidor local (rode: python -m http.server) para ler o devocional-hoje.json.");
  const res=await fetch("devocional-hoje.json",{cache:"no-store"});
- if(!res.ok)throw new Error("O devocional de hoje ainda não foi publicado.");
- saveDev(await res.json());
+ if(!res.ok)throw new Error(res.status===404?"A publicação automática de hoje ainda não chegou. Tente novamente em instantes.":"Não foi possível consultar a publicação diária.");
+ const dev=await res.json();
+ if(dev.data&&dev.data!==today)throw new Error("O devocional de hoje ainda não foi publicado.");
+ saveDev(dev);
 }
 async function generate(){
  busy=true;err="";render();
  try{
-  let sample=null;
-  try{sample=(typeof claude!=="undefined")?await claude.use("sample"):null}catch(e){}
-  if(!sample){await loadFromFile();busy=false;render();return}
-  const d=now.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-  const recent=Object.keys(S.dev).sort().slice(-15).map(k=>S.dev[k].titulo);
-  const prompt=`Você escreve devocionais cristãos em português do Brasil, com linguagem acolhedora e simples, para o dia ${d}. Tema do dia: ${theme}. O fio condutor é o amor de Cristo.
-Regras: título criativo e curto, diferente destes já usados: ${recent.length?recent.join("; "):"(nenhum ainda)"}. Use um versículo curto da Bíblia (Almeida) que você tenha certeza de que está correto. Reflexão de 3 parágrafos curtos e práticos, sem tom de julgamento e sem afirmar doutrinas de uma denominação específica. Termine com uma oração curta em primeira pessoa.
-Responda SOMENTE com um objeto JSON, sem texto antes ou depois e sem markdown: {"titulo":"...","versiculo":"texto do versículo","referencia":"Livro cap:vers","reflexao":["p1","p2","p3"],"oracao":"..."}`;
-  let lastErr;
-  for(let i=0;i<2;i++){
-   try{const out=await sample(prompt,{cache:false});saveDev(parseDev(out.text));lastErr=null;break}
-   catch(e){lastErr=e;if(e&&e.code)break}
-  }
-  if(lastErr)throw lastErr;
+  await loadFromFile();
  }catch(e){
-  err=(e&&e.code==="not_granted")?"É preciso permitir a geração por IA para continuar.":"Não foi possível gerar agora"+(e&&e.code?" ("+e.code+")":"")+": "+((e&&e.message)||"tente novamente")+"";
+  err=(e&&e.message)||"Não foi possível consultar a publicação diária. Tente novamente.";
  }
  busy=false;render()}
 function setTheme(t){
  if(t==="dark")document.documentElement.setAttribute("data-theme","dark");else document.documentElement.removeAttribute("data-theme");
- S.theme=t;save();const b=$("tbtn");if(b)b.textContent=t==="dark"?"☀️":"🌙";
+ S.theme=t;save();const b=$("tbtn");if(b){b.textContent=t==="dark"?"☀️":"🌙";b.setAttribute("aria-label",t==="dark"?"Ativar tema claro":"Ativar tema escuro");b.title=t==="dark"?"Ativar tema claro":"Ativar tema escuro";}
 }
 function toggleTheme(){setTheme(S.theme==="dark"?"light":"dark")}
 function toggleMenu(){const m=$("menu");if(!m.hidden){m.hidden=true;return}
@@ -99,4 +88,4 @@ function openDonate(){
  <p class="muted">Toda contribuição ajuda a manter o devocional diário no ar. Obrigado!</p>`)}
 setTheme(S.theme==="dark"?"dark":"light");
 render();
-if(!S.dev[today]&&typeof claude==="undefined"){loadFromFile().then(render).catch(()=>{})}
+if(!S.dev[today]){loadFromFile().then(()=>{err="";render()}).catch(e=>{err=e.message;render()})}
