@@ -74,7 +74,7 @@ function openDonate(){
  if(c.whatsapp)links.push(`<a class="btn" target="_blank" rel="noopener" href="https://wa.me/${c.whatsapp.replace(/\D/g,"")}">WhatsApp</a>`);
  if(c.email)links.push(`<a class="btn ghost" href="mailto:${esc(c.email)}">E-mail</a>`);
  if(c.instagram)links.push(`<a class="btn ghost" target="_blank" rel="noopener" href="https://instagram.com/${esc(c.instagram.replace("@",""))}">Instagram</a>`);
- modal(`<h3>❤️ Apoie o projeto</h3><p>A Caminhada é gratuito. Se este devocional abençoou a sua vida, você pode contribuir da forma que preferir, no valor que o seu coração indicar. Entre em contato e combinamos a melhor maneira.</p>
+ modal(`<h3>❤️ Apoie o projeto</h3><p>A Caminhada é gratuita. Se este devocional abençoou a sua vida, você pode contribuir da forma que preferir, no valor que o seu coração indicar. Entre em contato e combinamos a melhor maneira.</p>
  ${c.pix?`<div class="muted">Chave Pix</div><div class="pix">${esc(c.pix)}</div><button class="btn ghost" id="cp" onclick="copyPix()">Copiar chave Pix</button>`:""}
  ${links.length?`<div class="contact">${links.join("")}</div>`:`<p class="muted">Os canais de contato serão divulgados em breve.</p>`}
  <p class="muted">Toda contribuição ajuda a manter o devocional diário no ar. Obrigado!</p>`)}
