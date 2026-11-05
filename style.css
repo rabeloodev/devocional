@@ -132,38 +132,21 @@ textarea,
 .menu button:last-child {
   border: 0;
 }
+.menu-symbol {
+  display: inline-flex;
+  width: 1.5em;
+  align-items: center;
+  justify-content: center;
+  color: var(--detalhe);
+  font-size: 1.05em;
+  line-height: 1;
+}
+.quote-symbol {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3em;
+}
 .menu button:hover {
   background: var(--fundo-suave);
-}
-.primary-nav {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 16px;
-  background: var(--barra);
-  border-bottom: 1px solid var(--linha);
-}
-.nav-tab {
-  min-width: 120px;
-  padding: 8px 14px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--textoo-secundario);
-  font: 600 0.9rem system-ui, sans-serif;
-  cursor: pointer;
-}
-.nav-tab:hover {
-  background: var(--fundo-suave);
-  color: var(--texto);
-}
-.nav-tab.active {
-  background: var(--destaque);
-  color: var(--textoo-destaque);
-}
-.nav-tab:focus-visible {
-  outline: 2px solid var(--detalhe);
-  outline-offset: 2px;
 }
 main {
   max-width: 1120px;
@@ -219,24 +202,22 @@ h1 {
 .quotes-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
+  align-items: start;
   gap: 14px;
   margin-top: 16px;
 }
 .quote-card {
   display: flex;
-  min-height: 160px;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 22px;
+  padding: 18px;
   background: var(--superficie);
   border: 1px solid var(--linha);
   border-radius: 8px;
 }
 .quote-card p {
-  margin: 0 0 20px;
+  margin: 0 0 14px;
   overflow-wrap: anywhere;
-  font-size: 1.12rem;
+  font-size: 1.05rem;
   line-height: 1.55;
 }
 .quote-card cite {

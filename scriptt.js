@@ -90,10 +90,7 @@ function renderPhrases() {
 }
 function selectPage(nextPage) {
   page = nextPage
-  $("devotional-tab").classList.toggle("active", page === "devotional")
-  $("devotional-tab").setAttribute("aria-pressed", String(page === "devotional"))
-  $("phrases-tab").classList.toggle("active", page === "phrases")
-  $("phrases-tab").setAttribute("aria-pressed", String(page === "phrases"))
+  $("menu").hidden = true
   render()
 }
 function render() {
@@ -210,7 +207,11 @@ function toggleMenu() {
     m.hidden = true
     return
   }
-  m.innerHTML = `<button onclick="openNotes()">📝 Notas deste devocional</button><button onclick="openArchive()">📚 Devocionais anteriores</button><button onclick="openDonate()">❤️ Apoiar o projeto</button>`
+  const pageAction =
+    page === "phrases"
+      ? `<button onclick="selectPage('devotional')"><span class="menu-symbol" aria-hidden="true">✝</span>Devocional diário</button>`
+      : `<button onclick="selectPage('phrases')"><span class="menu-symbol quote-symbol" aria-hidden="true">❝</span>Frases</button>`
+  m.innerHTML = `${pageAction}<button onclick="openNotes()">📝 Notas deste devocional</button><button onclick="openArchive()">📚 Devocionais anteriores</button><button onclick="openDonate()">❤️ Apoiar o projeto</button>`
   m.hidden = false
 }
 document.addEventListener("click", (e) => {
