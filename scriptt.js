@@ -48,7 +48,8 @@ const utcDay = (value) => {
 }
 let today = key(now),
   viewKey = today,
-  biblioteca = { data_inicio: "2026-11-02", devocionais: [] },
+  page = "devotional",
+  biblioteca = { data_inicio: "2026-11-02", devocionais: [], frases: [] },
   loading = true,
   loadError = ""
 function dateBox(d) {
@@ -77,7 +78,29 @@ function renderDailyVerses(dev) {
     ${dev.frase_autoral ? `<blockquote class="daily-author-quote"><p>“${esc(dev.frase_autoral.texto)}”</p><cite>${esc(dev.frase_autoral.autor)}</cite></blockquote>` : ""}
   </section>`
 }
+function renderPhrases() {
+  const phrases = biblioteca.frases
+  return `<section aria-labelledby="phrases-title">
+    <h1 id="phrases-title">Frases</h1>
+    <div class="quotes-grid">${phrases.map((phrase) => `<article class="quote-card">
+      <p>“${esc(phrase.texto)}”</p>
+      <cite>${esc(phrase.autor)}</cite>
+    </article>`).join("")}</div>
+  </section>`
+}
+function selectPage(nextPage) {
+  page = nextPage
+  $("devotional-tab").classList.toggle("active", page === "devotional")
+  $("devotional-tab").setAttribute("aria-pressed", String(page === "devotional"))
+  $("phrases-tab").classList.toggle("active", page === "phrases")
+  $("phrases-tab").setAttribute("aria-pressed", String(page === "phrases"))
+  render()
+}
 function render() {
+  if (page === "phrases") {
+    $("app").innerHTML = renderPhrases()
+    return
+  }
   const d = new Date(viewKey + "T12:00:00"),
     dev = devotionalFor(viewKey)
   let h = `<h1>Devocional diário</h1><p class="lead">Uma mensagem de fé para acompanhar sua caminhada, todos os dias.</p>`
@@ -111,6 +134,18 @@ async function loadLibrary() {
   const data = await response.json()
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.data_inicio) || !Array.isArray(data.devocionais))
     throw new Error("Confira data_inicio e devocionais no arquivo devocionais.json.")
+  const phrasesValid =
+    data.frases === undefined ||
+    (Array.isArray(data.frases) &&
+      data.frases.every(
+        (phrase) =>
+          phrase &&
+          typeof phrase.texto === "string" &&
+          phrase.texto.trim() &&
+          typeof phrase.autor === "string" &&
+          phrase.autor.trim(),
+      ))
+  if (!phrasesValid) throw new Error("Revise os campos texto e autor em frases.")
   const valid = data.devocionais.every(
     (dev) =>
       dev &&
@@ -138,7 +173,7 @@ async function loadLibrary() {
           dev.frase_autoral.autor.trim())),
   )
   if (!valid) throw new Error("Revise os campos dos devocionais em devocionais.json.")
-  biblioteca = data
+  biblioteca = { ...data, frases: data.frases || [] }
 }
 async function shareDailyVerse(index) {
   const verse = versesFor(devotionalFor(viewKey))[index]

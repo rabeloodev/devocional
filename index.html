@@ -11,6 +11,10 @@
 <div class="bar"><div class="logo">Caminhada <span>✝</span><small>DEVOCIONAL DIÁRIO · VERSÃO BETA</small></div>
 <div class="tools"><button class="tbtn" id="tbtn" aria-label="Alternar tema" onclick="toggleTheme()">🌙</button>
 <div class="menuwrap"><button class="dots" aria-label="Menu" onclick="toggleMenu()">⋮</button><div class="menu" id="menu" hidden></div></div></div></div>
+<nav class="primary-nav" aria-label="Seções principais">
+<button id="devotional-tab" class="nav-tab active" aria-pressed="true" onclick="selectPage('devotional')">Devocional</button>
+<button id="phrases-tab" class="nav-tab" aria-pressed="false" onclick="selectPage('phrases')">Frases</button>
+</nav>
 <main id="app"></main>
 <div id="modal"></div>
 <div class="credit">feito por <b>kauarabelodev</b></div>

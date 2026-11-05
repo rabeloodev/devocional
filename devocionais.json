@@ -1,5 +1,19 @@
 {
   "data_inicio": "2026-11-03",
+  "frases": [
+    {
+      "texto": "Senhor, tens misericórdia de mim.",
+      "autor": "Kauã Rabelo"
+    },
+    {
+      "texto": "Pedro afundou quando tirou os olhos de Jesus.",
+      "autor": "Kauã Rabelo"
+    },
+    {
+      "texto": "O que foi que João viu naquela Ilha de Patmos? O que o fez cair no chão como morto?",
+      "autor": "Kauã Rabelo"
+    }
+  ],
   "devocionais": [
     {
       "titulo": "Devocional Diário",
